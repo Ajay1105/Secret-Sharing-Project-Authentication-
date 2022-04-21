@@ -16,7 +16,7 @@ app.use(bodyParser.urlencoded({
     extended: true
 }));
 
-const uri = 'mongodb+srv://aky11052003:Engineering@cluster0.axglx.mongodb.net/insertDB?retryWrites=true&w=majority';
+const uri = `mongodb+srv://${process.env.KEY}@cluster0.axglx.mongodb.net/insertDB?retryWrites=true&w=majority`;
 try {
     mongoose.connect(
       uri,
