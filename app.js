@@ -5,7 +5,9 @@ const ejs = require("ejs");
 const mongoose = require("mongoose");
 const { redirect } = require("express/lib/response");
 const app = express();
-const md5 = require('md5');
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
+//const md5 = require('md5');
 //const encrypt = require("mongoose-encryption");
 
 app.use(express.static("public"));
@@ -52,28 +54,32 @@ app.get("/secrets", function (req, res) {
 app.post("/register",(req,res)=>{
  const userName = req.body.username;
  const password = req.body.password;
- const data = new User({
-     email: userName,
-     password: md5(password)
- });
- data.save();
- res.redirect("/");
+ bcrypt.hash(password, saltRounds, function(err, hash) {
+    const data = new User({
+        email: userName,
+        password: hash //md5(password)
+    });
+    data.save();
+    res.redirect("/");
+});
 });
 
 app.post("/login", (req,res)=>{
     let s =1;
     const userName = req.body.username;
-    const password = md5(req.body.password);
+    const password = req.body.password //md5(req.body.password);
     User.findOne({email: userName},(err, data) => {
         if(err){console.log(err)}
         else{
-            if( data.password == password){
-                s = 0;
-                res.redirect("/secrets");
-            }
-            else{
-                res.send("Email and Password does not match!");
-            }
+            bcrypt.compare(password, data.password, function(err, result) {
+                if( result == true){
+                    s = 0;
+                    res.redirect("/secrets");
+                }
+                else{
+                    res.send("Email and Password does not match!");
+                }
+            });
         }
     });
 });
