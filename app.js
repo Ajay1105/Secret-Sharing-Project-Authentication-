@@ -40,8 +40,7 @@ passport.use(new GoogleStrategy({
     clientSecret: process.env.CLIENT_SECRET,
     callbackURL: "http://localhost:3000/auth/google/secrets"
 },
-    function (accessToken, refreshToken, profile, cb) {
-        console.log(profile);
+    function (accessToken, refreshToken, profile, cb){
         User.findOrCreate({ googleId: profile.id }, function (err, user) {
             return cb(err, user);
         });
@@ -62,7 +61,8 @@ try {
 const userSchema = new mongoose.Schema({
     email: String,
     password: String,
-    googleId: String
+    googleId: String,
+    secret: String
 });
 
 userSchema.plugin(passportLocalMongoose);
@@ -112,7 +112,10 @@ app.get("/register", function (req, res) {
 
 app.get("/secrets", function (req, res) {
     if (req.isAuthenticated()) {
-        res.render("secrets");
+        User.find({secret: { $ne: null }},(err,secretData)=>{
+            if(err){ console.log(err) }
+            else{ res.render("secrets", { data: secretData}); }  
+        });
     } else {
         res.redirect("/login");
     }
@@ -121,6 +124,14 @@ app.get("/secrets", function (req, res) {
 app.get("/logout", (req, res) => {
     req.logout();
     res.redirect("/");
+});
+
+app.get("/submit",(req,res) => {
+    if (req.isAuthenticated()) {
+        res.render("submit");
+    } else {
+        res.redirect("/login");
+    }
 });
 
 
@@ -151,6 +162,17 @@ app.post("/login", (req, res) => {
             });
         }
     });
+});
+
+app.post("/submit", (req,res)=>{
+    const secret = req.body.secret;
+    console.log(req.user , secret);
+    User.findById(req.user.id, function (err, doc) {
+        if (err){ console.log(err)}
+        doc.secret = secret;
+        doc.save();
+        res.redirect("/secrets");
+      });
 });
 
 // Used upto level 4
